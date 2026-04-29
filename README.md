@@ -13,6 +13,6 @@ By Animesh Banerjee | 2025–26
 "Applied intelligence: The SARCI framework's Bangladesh supply chain 
 risk rating of 3.67 (HIGH) was validated in real time during the Hormuz 
 energy crisis of Q1–Q2 2026. See companion intelligence brief: 
-[STRAT-RISK-2026-04-28](./STRAT-RISK-2026-04-28.md)"
+[STRAT-RISK-2026-04-28](./STRAT-RISK-2026-04-28..pdf)"
 
 
