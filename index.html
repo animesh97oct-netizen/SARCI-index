@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SARCI — South & Central Asia Risk Composite Index</title>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700&f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.263.1/dist/umd/lucide.min.js"></script>
+<style>
+/* ── DESIGN TOKENS ──────────────────────────────────────────────── */
+:root {
+  --text-xs:   clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+  --text-sm:   clamp(0.875rem, 0.8rem  + 0.35vw, 1rem);
+  --text-base: clamp(1rem,     0.95rem + 0.25vw, 1.125rem);
+  --text-lg:   clamp(1.125rem, 1rem    + 0.75vw, 1.5rem);
+  --text-xl:   clamp(1.5rem,   1.2rem  + 1.25vw, 2.25rem);
+  --space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;
+  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
+  --space-12:3rem;--space-16:4rem;
+  --radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;--radius-xl:1rem;--radius-full:9999px;
+  --transition: 180ms cubic-bezier(0.16,1,0.3,1);
+  --font-display:'Cabinet Grotesk','Helvetica Neue',sans-serif;
+  --font-body:'Satoshi','Inter',sans-serif;
+  --content-wide:1200px;
+}
+[data-theme="dark"] {
+  --bg:#0d0f14;--surface:#13161d;--surface-2:#181b23;--surface-3:#1e2230;
+  --border:rgba(255,255,255,0.07);--divider:rgba(255,255,255,0.04);
+  --text:#e8eaf0;--muted:#7c8296;--faint:#3d4155;
+  --accent:#4f9cf9;--accent-dim:rgba(79,156,249,0.12);
+  --critical:#ef4444;--veryhigh:#f97316;--high:#f59e0b;
+  --medium:#3b82f6;--low:#22c55e;--verylow:#10b981;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.4);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.5);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.6);
+}
+[data-theme="light"] {
+  --bg:#f4f6fb;--surface:#fff;--surface-2:#f9fafb;--surface-3:#eef1f8;
+  --border:rgba(0,0,0,0.08);--divider:rgba(0,0,0,0.04);
+  --text:#1a1d2e;--muted:#6b7280;--faint:#d1d5db;
+  --accent:#2563eb;--accent-dim:rgba(37,99,235,0.08);
+  --critical:#dc2626;--veryhigh:#ea580c;--high:#d97706;
+  --medium:#2563eb;--low:#16a34a;--verylow:#059669;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 40px rgba(0,0,0,0.12);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{font-family:var(--font-body);font-size:var(--text-sm);color:var(--text);background:var(--bg);min-height:100vh;transition:background var(--transition),color var(--transition);}
+img{max-width:100%;display:block;}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit;}
+table{border-collapse:collapse;width:100%;}
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:var(--space-6) 0;}
+.main{overflow:auto;padding:var(--space-8);max-width:100%;}
+/* ── SIDEBAR ────────────────────────────────────────────────────── */
+.logo{padding:0 var(--space-6) var(--space-6);border-bottom:1px solid var(--border);margin-bottom:var(--space-4);}
+.logo-mark{display:flex;align-items:center;gap:var(--space-3);}
+.logo-icon{width:36px;height:36px;flex-shrink:0;}
+.logo-text{font-family:var(--font-display);font-weight:800;font-size:var(--text-base);line-height:1.1;}
+.logo-sub{font-size:var(--text-xs);color:var(--muted);margin-top:2px;}
+.nav-section{padding:0 var(--space-3);margin-bottom:var(--space-2);}
+.nav-label{font-size:var(--text-xs);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;padding:var(--space-2) var(--space-3);margin-bottom:var(--space-1);}
+.nav-item{display:flex;align-items:center;gap:var(--space-3);padding:var(--space-2) var(--space-3);border-radius:var(--radius-md);font-size:var(--text-sm);color:var(--muted);cursor:pointer;transition:all var(--transition);}
+.nav-item:hover,.nav-item.active{background:var(--accent-dim);color:var(--accent);}
+.nav-item i{width:16px;height:16px;flex-shrink:0;}
+.sidebar-footer{margin-top:auto;padding:var(--space-4) var(--space-6);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.theme-btn{width:32px;height:32px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;color:var(--muted);transition:all var(--transition);}
+.theme-btn:hover{background:var(--surface-3);color:var(--text);}
+/* ── HEADER ─────────────────────────────────────────────────────── */
+.page-header{margin-bottom:var(--space-8);}
+.page-title{font-family:var(--font-display);font-size:var(--text-xl);font-weight:800;line-height:1.1;margin-bottom:var(--space-2);}
+.page-title span{color:var(--accent);}
+.page-meta{display:flex;align-items:center;gap:var(--space-4);flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:var(--space-1);padding:2px var(--space-2);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;}
+.badge-accent{background:var(--accent-dim);color:var(--accent);}
+.badge-muted{background:var(--surface-3);color:var(--muted);}
+.dot{width:6px;height:6px;border-radius:50%;}
+/* ── KPI STRIP ──────────────────────────────────────────────────── */
+.kpi-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:var(--space-4);margin-bottom:var(--space-8);}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-5) var(--space-6);box-shadow:var(--shadow-sm);}
+.kpi-label{font-size:var(--text-xs);color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.06em;margin-bottom:var(--space-2);}
+.kpi-value{font-family:var(--font-display);font-size:var(--text-lg);font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
+.kpi-sub{font-size:var(--text-xs);color:var(--muted);margin-top:var(--space-1);}
+/* ── GRID ───────────────────────────────────────────────────────── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-6);}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:var(--space-6);margin-bottom:var(--space-6);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);padding:var(--space-6);box-shadow:var(--shadow-sm);}
+.card-title{font-size:var(--text-xs);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:var(--space-5);}
+/* ── TABLE ──────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;}
+thead th{text-align:left;padding:var(--space-3) var(--space-4);font-size:var(--text-xs);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--divider);cursor:pointer;transition:background var(--transition);}
+tbody tr:hover{background:var(--accent-dim);}
+tbody td{padding:var(--space-3) var(--space-4);font-size:var(--text-sm);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.rank-cell{color:var(--muted);font-weight:700;font-size:var(--text-xs);}
+.country-cell{font-weight:600;}
+.score-cell{font-weight:700;font-variant-numeric:tabular-nums;}
+/* ── RISK BADGES ────────────────────────────────────────────────── */
+.risk{display:inline-block;padding:2px 10px;border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:700;letter-spacing:.04em;}
+.risk-critical{background:rgba(239,68,68,.15);color:var(--critical);}
+.risk-veryhigh{background:rgba(249,115,22,.15);color:var(--veryhigh);}
+.risk-high{background:rgba(245,158,11,.15);color:var(--high);}
+.risk-medium{background:rgba(59,130,246,.15);color:var(--medium);}
+.risk-low{background:rgba(34,197,94,.15);color:var(--low);}
+.risk-verylow{background:rgba(16,185,129,.15);color:var(--verylow);}
+/* ── MINI BAR ───────────────────────────────────────────────────── */
+.mini-bar{display:flex;align-items:center;gap:var(--space-2);}
+.mini-bar-bg{width:80px;height:5px;background:var(--surface-3);border-radius:var(--radius-full);overflow:hidden;}
+.mini-bar-fill{height:100%;border-radius:var(--radius-full);}
+/* ── RADAR PANEL ────────────────────────────────────────────────── */
+.radar-panel{display:flex;flex-direction:column;align-items:center;}
+.radar-label{text-align:center;color:var(--muted);font-size:var(--text-xs);margin-top:var(--space-3);}
+/* ── FILTER STRIP ───────────────────────────────────────────────── */
+.filter-strip{display:flex;gap:var(--space-2);flex-wrap:wrap;margin-bottom:var(--space-5);}
+.filter-btn{padding:var(--space-1) var(--space-4);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:600;border:1px solid var(--border);color:var(--muted);transition:all var(--transition);}
+.filter-btn:hover,.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+/* ── PILLAR PILLS ───────────────────────────────────────────────── */
+.pillars{display:flex;gap:var(--space-2);flex-wrap:wrap;margin-top:var(--space-2);}
+.pill{padding:var(--space-1) var(--space-3);border-radius:var(--radius-full);font-size:var(--text-xs);font-weight:500;background:var(--surface-3);color:var(--muted);}
+/* ── SECTION DIVIDER ────────────────────────────────────────────── */
+.section-title{font-family:var(--font-display);font-size:var(--text-base);font-weight:700;margin-bottom:var(--space-5);display:flex;align-items:center;gap:var(--space-2);}
+.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+/* ── CANVAS ─────────────────────────────────────────────────────── */
+canvas{max-height:300px;}
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;}
+  .sidebar{display:none;}
+  .grid-2,.grid-3{grid-template-columns:1fr;}
+  .main{padding:var(--space-4);}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+<!-- ══ SIDEBAR ═══════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg class="logo-icon" viewBox="0 0 36 36" fill="none" aria-label="SARCI logo">
+        <rect width="36" height="36" rx="8" fill="#4f9cf9" opacity=".15"/>
+        <polygon points="18,5 31,27 5,27" fill="none" stroke="#4f9cf9" stroke-width="2"/>
+        <circle cx="18" cy="20" r="4" fill="#4f9cf9"/>
+        <line x1="18" y1="5" x2="18" y2="16" stroke="#4f9cf9" stroke-width="1.5" opacity=".5"/>
+      </svg>
+      <div>
+        <div class="logo-text">SARCI</div>
+        <div class="logo-sub">Risk Intelligence</div>
+      </div>
+    </div>
+  </div>
+  <nav class="nav-section">
+    <div class="nav-label">Dashboard</div>
+    <div class="nav-item active" onclick="showView('overview')"><i data-lucide="layout-dashboard"></i> Overview</div>
+    <div class="nav-item" onclick="showView('rankings')"><i data-lucide="bar-chart-2"></i> Rankings</div>
+    <div class="nav-item" onclick="showView('pillars')"><i data-lucide="layers"></i> Pillars</div>
+  </nav>
+  <nav class="nav-section">
+    <div class="nav-label">Pillars</div>
+    <div class="nav-item" onclick="showView('economic')"><i data-lucide="trending-up"></i> Economic Stress</div>
+    <div class="nav-item" onclick="showView('supply')"><i data-lucide="git-branch"></i> Supply Chain</div>
+    <div class="nav-item" onclick="showView('security')"><i data-lucide="shield-alert"></i> Security</div>
+    <div class="nav-item" onclick="showView('political')"><i data-lucide="landmark"></i> Political Stability</div>
+  </nav>
+  <div class="sidebar-footer">
+    <span style="font-size:var(--text-xs);color:var(--muted)">SARCI 2025–26</span>
+    <button class="theme-btn" data-theme-toggle aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</aside>
+
+<!-- ══ MAIN ══════════════════════════════════════════════════════ -->
+<main class="main">
+
+<!-- ─ OVERVIEW ─────────────────────────────────────────────────── -->
+<div id="view-overview">
+  <div class="page-header">
+    <div class="page-title">South &amp; Central Asia <span>Risk Index</span></div>
+    <div class="page-meta">
+      <span class="badge badge-accent"><span class="dot" style="background:var(--accent)"></span>SARCI 2025–26</span>
+      <span class="badge badge-muted">13 Countries</span>
+      <span class="badge badge-muted">4 Pillars · 9 Sub-Indicators</span>
+      <span class="badge badge-muted">IMF · UN Comtrade · ACLED · World Bank WGI</span>
+    </div>
+    <div class="pillars" style="margin-top:var(--space-3)">
+      <span class="pill">📈 Economic Stress</span>
+      <span class="pill">🔗 Supply Chain</span>
+      <span class="pill">🛡 Security (ACLED)</span>
+      <span class="pill">🏛 Political Stability (WGI)</span>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip" id="kpiStrip"></div>
+
+  <!-- Chart row -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">SARCI Composite Score — All 13 Countries</div>
+      <canvas id="compositeBar"></canvas>
+    </div>
+    <div class="card radar-panel">
+      <div class="card-title">Pillar Radar — Click any country row</div>
+      <canvas id="radarChart" style="max-height:260px"></canvas>
+      <div class="radar-label" id="radarLabel">Click a country in the rankings to load its radar</div>
+    </div>
+  </div>
+
+  <!-- Risk distribution donut + pillar heatmap -->
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Risk Distribution</div>
+      <canvas id="donutChart" style="max-height:240px"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Pillar Heatmap — All Countries</div>
+      <div id="heatmap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ─ RANKINGS ──────────────────────────────────────────────────── -->
+<div id="view-rankings" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Country <span>Rankings</span></div>
+    <div class="page-meta"><span class="badge badge-muted">Sorted by SARCI Score (highest risk first)</span></div>
+  </div>
+  <div class="card">
+    <div class="filter-strip" id="rankFilters"></div>
+    <div class="table-wrap">
+      <table id="mainTable">
+        <thead><tr>
+          <th>#</th><th>Country</th><th>Economic</th><th>Supply Chain</th>
+          <th>Security</th><th>Political</th><th>SARCI</th><th>Rating</th>
+        </tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ─ PILLARS ───────────────────────────────────────────────────── -->
+<div id="view-pillars" style="display:none">
+  <div class="page-header">
+    <div class="page-title">Pillar <span>Deep Dive</span></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Economic Stress (IMF WEO 2026)</div><canvas id="pillarEcon"></canvas></div>
+    <div class="card"><div class="card-title">Supply Chain Exposure (UN Comtrade / OTEXA)</div><canvas id="pillarSC"></canvas></div>
+  </div>
+  <div class="grid-2">
+    <div class="card"><div class="card-title">Security Environment (ACLED Dec 2024)</div><canvas id="pillarSec"></canvas></div>
+    <div class="card"><div class="card-title">Political Stability (World Bank WGI 2024)</div><canvas id="pillarPol"></canvas></div>
+  </div>
+</div>
+
+<!-- ─ INDIVIDUAL PILLAR VIEWS ───────────────────────────────────── -->
+<div id="view-economic" style="display:none">
+  <div class="page-header"><div class="page-title"><span>Economic</span> Stress</div><div class="page-meta"><span class="badge badge-muted">Source: IMF World Economic Outlook, April 2026</span></div></div>
+  <div class="card"><div class="card-title">GDP Growth · Inflation · Fiscal Balance — Sub-indicator scores (1–5)</div><canvas id="econDetail" style="max-height:340px"></canvas></div>
+</div>
+<div id="view-supply" style="display:none">
+  <div class="page-header"><div class="page-title"><span>Supply Chain</span> Exposure</div><div class="page-meta"><span class="badge badge-muted">Source: UN Comtrade · WITS World Bank · OTEXA 2024</span></div></div>
+  <div class="card"><div class="card-title">Export Concentration · China Dependency · US Apparel Share</div><canvas id="scDetail" style="max-height:340px"></canvas></div>
+</div>
+<div id="view-security" style="display:none">
+  <div class="page-header"><div class="page-title"><span>Security</span> Environment</div><div class="page-meta"><span class="badge badge-muted">Source: ACLED Conflict Index Dec 2024 · ACLED Official Data Files (uploaded)</span></div></div>
+  <div class="card"><div class="card-title">ACLED Level · Events/100k · Deaths/100k</div><canvas id="secDetail" style="max-height:340px"></canvas></div>
+</div>
+<div id="view-political" style="display:none">
+  <div class="page-header"><div class="page-title"><span>Political</span> Stability</div><div class="page-meta"><span class="badge badge-muted">Source: World Bank WGI 2024 — Political Stability &amp; Absence of Violence</span></div></div>
+  <div class="card"><div class="card-title">WGI Score (0–100) · Risk Score (1–5)</div><canvas id="polDetail" style="max-height:340px"></canvas></div>
+</div>
+
+</main>
+</div>
+
+<!-- ══ JAVASCRIPT ═════════════════════════════════════════════════ -->
+<script>
+// ── DATA ──────────────────────────────────────────────────────────
+const DATA = [
+  {c:"Myanmar",      econ:3.67, sc:2.33, sec:5.00, pol:5, sarci:4.00, rating:"VERY HIGH",
+   gdp:3.0,inf:19.0,fiscal:-5.0, sc1:90,sc2:30,sc3:0.5, events:24.24,deaths:37.88, wgi:4.7},
+  {c:"Afghanistan",  econ:5.00, sc:2.00, sec:4.00, pol:4, sarci:3.75, rating:"VERY HIGH",
+   gdp:null,inf:null,fiscal:null, sc1:40,sc2:10,sc3:0, events:2.57,deaths:3.17, wgi:28.2},
+  {c:"Bangladesh",   econ:2.67, sc:3.67, sec:3.33, pol:3, sarci:3.17, rating:"HIGH",
+   gdp:4.7,inf:9.2,fiscal:-4.3, sc1:85,sc2:1,sc3:10.53, events:0.68,deaths:1.10, wgi:40.9},
+  {c:"Pakistan",     econ:2.33, sc:2.67, sec:3.33, pol:4, sarci:3.08, rating:"HIGH",
+   gdp:3.6,inf:7.2,fiscal:-3.2, sc1:54.6,sc2:7,sc3:2, events:1.05,deaths:1.26, wgi:30.6},
+  {c:"Sri Lanka",    econ:5.00, sc:2.33, sec:1.00, pol:2, sarci:2.58, rating:"MEDIUM",
+   gdp:null,inf:null,fiscal:null, sc1:45,sc2:2,sc3:2, events:0.25,deaths:0.02, wgi:59.9},
+  {c:"India",        econ:2.33, sc:2.33, sec:2.33, pol:3, sarci:2.50, rating:"MEDIUM",
+   gdp:6.5,inf:4.7,fiscal:-7.4, sc1:20,sc2:3,sc3:6.35, events:0.25,deaths:0.08, wgi:52.5},
+  {c:"Maldives",     econ:3.00, sc:2.33, sec:2.00, pol:2, sarci:2.33, rating:"MEDIUM",
+   gdp:3.0,inf:3.0,fiscal:-11.2, sc1:55,sc2:5,sc3:0, events:1.20,deaths:0.20, wgi:65.0},
+  {c:"Turkmenistan", econ:2.00, sc:3.67, sec:1.00, pol:2, sarci:2.17, rating:"MEDIUM",
+   gdp:2.6,inf:3.9,fiscal:0.3, sc1:90,sc2:68,sc3:0, events:0.02,deaths:0.00, wgi:70.1},
+  {c:"Kyrgyzstan",   econ:2.33, sc:2.00, sec:1.33, pol:2, sarci:1.92, rating:"LOW",
+   gdp:6.1,inf:10.6,fiscal:-3.6, sc1:38.8,sc2:8,sc3:0, events:0.51,deaths:0.01, wgi:57.3},
+  {c:"Kazakhstan",   econ:2.00, sc:2.67, sec:1.00, pol:2, sarci:1.92, rating:"LOW",
+   gdp:4.6,inf:10.7,fiscal:-1.3, sc1:65,sc2:21,sc3:0, events:0.35,deaths:0.02, wgi:61.1},
+  {c:"Tajikistan",   econ:1.33, sc:2.33, sec:1.00, pol:2, sarci:1.67, rating:"LOW",
+   gdp:6.0,inf:4.0,fiscal:-2.5, sc1:40,sc2:20,sc3:0, events:0.00,deaths:0.00, wgi:61.2},
+  {c:"Nepal",        econ:2.00, sc:1.67, sec:1.00, pol:2, sarci:1.67, rating:"LOW",
+   gdp:3.0,inf:3.1,fiscal:-2.5, sc1:25,sc2:5,sc3:0.1, events:0.49,deaths:0.02, wgi:58.8},
+  {c:"Uzbekistan",   econ:1.33, sc:2.00, sec:1.00, pol:2, sarci:1.58, rating:"LOW",
+   gdp:6.5,inf:7.0,fiscal:-0.8, sc1:35,sc2:5.5,sc3:0, events:0.05,deaths:0.01, wgi:65.4},
+  {c:"Bhutan",       econ:1.33, sc:1.67, sec:1.00, pol:1, sarci:1.25, rating:"VERY LOW",
+   gdp:7.5,inf:4.0,fiscal:-2.9, sc1:40,sc2:1.5,sc3:0, events:0.12,deaths:0.00, wgi:89.0},
+];
+
+const COLORS = {
+  "VERY HIGH":"#f97316","HIGH":"#f59e0b","MEDIUM":"#3b82f6","LOW":"#22c55e","VERY LOW":"#10b981","CRITICAL":"#ef4444"
+};
+const PILLAR_COLORS = ["#4f9cf9","#a78bfa","#f97316","#34d399"];
+
+function riskClass(r){return{
+  "VERY HIGH":"risk-veryhigh","HIGH":"risk-high","MEDIUM":"risk-medium","LOW":"risk-low","VERY LOW":"risk-verylow","CRITICAL":"risk-critical"
+}[r]||"risk-muted";}
+
+function getColor(s){
+  if(s>=4)return"#ef4444";if(s>=3.5)return"#f97316";if(s>=2.7)return"#f59e0b";
+  if(s>=2.1)return"#3b82f6";if(s>=1.7)return"#22c55e";return"#10b981";
+}
+
+// ── KPI STRIP ─────────────────────────────────────────────────────
+const kpis=[
+  {l:"Countries",v:"13",s:"South & Central Asia"},
+  {l:"VERY HIGH Risk",v:"2",s:"Myanmar, Afghanistan",col:"var(--veryhigh)"},
+  {l:"HIGH Risk",v:"2",s:"Bangladesh, Pakistan",col:"var(--high)"},
+  {l:"MEDIUM Risk",v:"4",s:"Sri Lanka, India + 2",col:"var(--medium)"},
+  {l:"LOW / VL Risk",v:"5+1",s:"Central Asia + Bhutan",col:"var(--low)"},
+  {l:"Avg SARCI Score",v:"2.38",s:"Regional average (1–5 scale)"},
+];
+kpis.forEach(k=>{
+  document.getElementById("kpiStrip").innerHTML+=`
+  <div class="kpi">
+    <div class="kpi-label">${k.l}</div>
+    <div class="kpi-value" style="${k.col?"color:"+k.col:""}">${k.v}</div>
+    <div class="kpi-sub">${k.s}</div>
+  </div>`;
+});
+
+// ── COMPOSITE BAR ─────────────────────────────────────────────────
+new Chart(document.getElementById("compositeBar"),{
+  type:"bar",
+  data:{
+    labels:DATA.map(d=>d.c),
+    datasets:[{data:DATA.map(d=>d.sarci),backgroundColor:DATA.map(d=>getColor(d.sarci)),borderRadius:6,}]
+  },
+  options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>`SARCI: ${c.parsed.y.toFixed(2)}`}}},
+    scales:{x:{grid:{display:false},ticks:{color:"#7c8296",font:{size:11}}},
+            y:{min:0,max:5.5,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}}}}
+});
+
+// ── RADAR ─────────────────────────────────────────────────────────
+const radarCtx=document.getElementById("radarChart").getContext("2d");
+const radarChart=new Chart(radarCtx,{
+  type:"radar",
+  data:{labels:["Economic","Supply Chain","Security","Political"],
+    datasets:[{data:[0,0,0,0],backgroundColor:"rgba(79,156,249,0.15)",borderColor:"#4f9cf9",pointBackgroundColor:"#4f9cf9",pointRadius:5}]},
+  options:{responsive:true,scales:{r:{min:0,max:5,ticks:{stepSize:1,color:"#7c8296",backdropColor:"transparent"},
+    grid:{color:"rgba(255,255,255,0.07)"},angleLines:{color:"rgba(255,255,255,0.07)"},
+    pointLabels:{color:"#e8eaf0",font:{size:12}}}},plugins:{legend:{display:false}}}
+});
+
+function updateRadar(d){
+  const col=getColor(d.sarci);
+  radarChart.data.datasets[0].data=[d.econ,d.sc,d.sec,d.pol];
+  radarChart.data.datasets[0].borderColor=col;
+  radarChart.data.datasets[0].backgroundColor=col+"26";
+  radarChart.data.datasets[0].pointBackgroundColor=col;
+  radarChart.update();
+  document.getElementById("radarLabel").textContent=`${d.c} — SARCI ${d.sarci.toFixed(2)} (${d.rating})`;
+}
+
+// ── DONUT ─────────────────────────────────────────────────────────
+const dist={};DATA.forEach(d=>{dist[d.rating]=(dist[d.rating]||0)+1;});
+const dOrder=["VERY HIGH","HIGH","MEDIUM","LOW","VERY LOW"];
+new Chart(document.getElementById("donutChart"),{
+  type:"doughnut",
+  data:{labels:dOrder.filter(k=>dist[k]),
+    datasets:[{data:dOrder.filter(k=>dist[k]).map(k=>dist[k]),backgroundColor:dOrder.filter(k=>dist[k]).map(k=>COLORS[k]),borderWidth:0,hoverOffset:6}]},
+  options:{responsive:true,cutout:"68%",plugins:{legend:{position:"right",labels:{color:"#7c8296",font:{size:12},padding:14}}}}
+});
+
+// ── HEATMAP ───────────────────────────────────────────────────────
+function heatColor(v){
+  if(v>=4.5)return"#ef4444";if(v>=3.5)return"#f97316";if(v>=2.7)return"#f59e0b";
+  if(v>=2.1)return"#3b82f6";if(v>=1.6)return"#22c55e";return"#10b981";
+}
+let hm=`<table style="width:100%;font-size:var(--text-xs)">
+<thead><tr><th style="text-align:left;padding:4px 6px;color:var(--muted)">Country</th>
+<th style="padding:4px 6px;color:var(--muted)">Econ</th><th style="padding:4px 6px;color:var(--muted)">SC</th>
+<th style="padding:4px 6px;color:var(--muted)">Sec</th><th style="padding:4px 6px;color:var(--muted)">Pol</th>
+<th style="padding:4px 6px;color:var(--muted)">SARCI</th></tr></thead><tbody>`;
+DATA.forEach(d=>{
+  const cell=(v)=>`<td style="text-align:center;padding:3px 6px;"><span style="display:inline-block;min-width:32px;padding:2px 6px;border-radius:4px;background:${heatColor(v)}22;color:${heatColor(v)};font-weight:700">${typeof v==="number"?v.toFixed(2):v}</span></td>`;
+  hm+=`<tr><td style="padding:3px 6px;font-weight:600;color:var(--text)">${d.c}</td>${cell(d.econ)}${cell(d.sc)}${cell(d.sec)}${cell(d.pol)}${cell(d.sarci)}</tr>`;
+});
+hm+=`</tbody></table>`;
+document.getElementById("heatmap").innerHTML=hm;
+
+// ── RANKINGS TABLE ────────────────────────────────────────────────
+function buildTable(arr){
+  const tb=document.getElementById("tableBody");
+  tb.innerHTML="";
+  arr.forEach((d,i)=>{
+    const pct=(d.sarci/5)*100;
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td class="rank-cell">#${i+1}</td>
+      <td class="country-cell">${d.c}</td>
+      <td><div class="mini-bar"><span style="font-weight:700;color:${getColor(d.econ)}">${d.econ.toFixed(2)}</span><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${(d.econ/5)*100}%;background:${getColor(d.econ)}"></div></div></div></td>
+      <td><div class="mini-bar"><span style="font-weight:700;color:${getColor(d.sc)}">${d.sc.toFixed(2)}</span><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${(d.sc/5)*100}%;background:${getColor(d.sc)}"></div></div></div></td>
+      <td><div class="mini-bar"><span style="font-weight:700;color:${getColor(d.sec)}">${d.sec.toFixed(2)}</span><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${(d.sec/5)*100}%;background:${getColor(d.sec)}"></div></div></div></td>
+      <td><div class="mini-bar"><span style="font-weight:700;color:${getColor(d.pol)}">${d.pol.toFixed(2)}</span><div class="mini-bar-bg"><div class="mini-bar-fill" style="width:${(d.pol/5)*100}%;background:${getColor(d.pol)}"></div></div></div></td>
+      <td class="score-cell" style="color:${getColor(d.sarci)};font-size:var(--text-base);font-family:var(--font-display)">${d.sarci.toFixed(2)}</td>
+      <td><span class="risk ${riskClass(d.rating)}">${d.rating}</span></td>`;
+    tr.addEventListener("click",()=>{ showView("overview"); updateRadar(d); });
+    tb.appendChild(tr);
+  });
+}
+buildTable(DATA);
+
+// ── FILTER BUTTONS ────────────────────────────────────────────────
+const ratings=["All","VERY HIGH","HIGH","MEDIUM","LOW","VERY LOW"];
+ratings.forEach(r=>{
+  const b=document.createElement("button");
+  b.className="filter-btn"+(r==="All"?" active":"");
+  b.textContent=r;
+  b.onclick=()=>{
+    document.querySelectorAll(".filter-btn").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    buildTable(r==="All"?DATA:DATA.filter(d=>d.rating===r));
+  };
+  document.getElementById("rankFilters").appendChild(b);
+});
+
+// ── PILLAR CHARTS (deep dive) ─────────────────────────────────────
+function makeHBar(id,label,values,colors){
+  new Chart(document.getElementById(id),{
+    type:"bar",
+    data:{labels:DATA.map(d=>d.c),datasets:[{label,data:values,backgroundColor:colors,borderRadius:4}]},
+    options:{indexAxis:"y",responsive:true,plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}},
+              y:{grid:{display:false},ticks:{color:"#e8eaf0",font:{size:11}}}}}
+  });
+}
+makeHBar("pillarEcon","Economic",DATA.map(d=>d.econ),DATA.map(d=>getColor(d.econ)));
+makeHBar("pillarSC","Supply Chain",DATA.map(d=>d.sc),DATA.map(d=>getColor(d.sc)));
+makeHBar("pillarSec","Security",DATA.map(d=>d.sec),DATA.map(d=>getColor(d.sec)));
+makeHBar("pillarPol","Political",DATA.map(d=>d.pol),DATA.map(d=>getColor(d.pol)));
+
+// ── DETAIL CHARTS ─────────────────────────────────────────────────
+// Economic: GDP / Inflation / Fiscal sub-scores grouped
+new Chart(document.getElementById("econDetail"),{
+  type:"bar",
+  data:{
+    labels:DATA.map(d=>d.c),
+    datasets:[
+      {label:"GDP Score",data:DATA.map(d=>d.gdp?((d.gdp<3?4:d.gdp<4.5?3:d.gdp<6?2:1)):4),backgroundColor:"#4f9cf9",borderRadius:3},
+      {label:"Inflation Score",data:DATA.map(d=>d.inf?((d.inf>15?5:d.inf>10?4:d.inf>7?3:d.inf>4?2:1)):4),backgroundColor:"#f97316",borderRadius:3},
+      {label:"Fiscal Score",data:DATA.map(d=>d.fiscal!=null?((d.fiscal>=-1?1:d.fiscal>=-3?2:d.fiscal>=-5?3:d.fiscal>=-7?4:5)):4),backgroundColor:"#a78bfa",borderRadius:3},
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{position:"top",labels:{color:"#7c8296",font:{size:11}}}},
+    scales:{x:{stacked:false,grid:{display:false},ticks:{color:"#7c8296",font:{size:10}}},
+            y:{min:0,max:5,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}}}}
+});
+// Supply Chain grouped
+new Chart(document.getElementById("scDetail"),{
+  type:"bar",
+  data:{labels:DATA.map(d=>d.c),
+    datasets:[
+      {label:"Export Conc.",data:DATA.map(d=>d.sc1<20?1:d.sc1<35?2:d.sc1<55?3:d.sc1<75?4:5),backgroundColor:"#4f9cf9",borderRadius:3},
+      {label:"China Dep.",data:DATA.map(d=>d.sc2<5?1:d.sc2<15?2:d.sc2<30?3:d.sc2<55?4:5),backgroundColor:"#f97316",borderRadius:3},
+      {label:"OTEXA",data:DATA.map(d=>d.sc3<1?1:d.sc3<2?2:d.sc3<4?3:d.sc3<7?4:5),backgroundColor:"#34d399",borderRadius:3},
+    ]},
+  options:{responsive:true,plugins:{legend:{position:"top",labels:{color:"#7c8296",font:{size:11}}}},
+    scales:{x:{grid:{display:false},ticks:{color:"#7c8296",font:{size:10}}},
+            y:{min:0,max:5,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}}}}
+});
+// Security
+new Chart(document.getElementById("secDetail"),{
+  type:"bar",
+  data:{labels:DATA.map(d=>d.c),
+    datasets:[
+      {label:"ACLED Level",data:DATA.map(d=>d.c==="Myanmar"?5:["Pakistan","India","Bangladesh","Afghanistan"].includes(d.c)?4:1),backgroundColor:"#ef4444",borderRadius:3},
+      {label:"Events/100k",data:DATA.map(d=>d.events<0.5?1:d.events<2?2:d.events<5?3:d.events<12?4:5),backgroundColor:"#f97316",borderRadius:3},
+      {label:"Deaths/100k",data:DATA.map(d=>d.deaths<0.05?1:d.deaths<0.2?2:d.deaths<0.8?3:d.deaths<3?4:5),backgroundColor:"#a78bfa",borderRadius:3},
+    ]},
+  options:{responsive:true,plugins:{legend:{position:"top",labels:{color:"#7c8296",font:{size:11}}}},
+    scales:{x:{grid:{display:false},ticks:{color:"#7c8296",font:{size:10}}},
+            y:{min:0,max:5,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}}}}
+});
+// Political WGI bar
+new Chart(document.getElementById("polDetail"),{
+  type:"bar",
+  data:{labels:DATA.map(d=>d.c),
+    datasets:[{label:"WGI Score (0–100)",data:DATA.map(d=>d.wgi),backgroundColor:DATA.map(d=>getColor(6-d.pol)),borderRadius:4}]},
+  options:{responsive:true,plugins:{legend:{display:false}},
+    scales:{x:{grid:{display:false},ticks:{color:"#7c8296",font:{size:10}}},
+            y:{min:0,max:100,grid:{color:"rgba(255,255,255,0.04)"},ticks:{color:"#7c8296"}}}}
+});
+
+// ── VIEW SWITCHER ─────────────────────────────────────────────────
+const views=["overview","rankings","pillars","economic","supply","security","political"];
+function showView(v){
+  views.forEach(x=>{
+    const el=document.getElementById("view-"+x);
+    if(el) el.style.display=x===v?"block":"none";
+  });
+  document.querySelectorAll(".nav-item").forEach(n=>{
+    n.classList.toggle("active",n.getAttribute("onclick")===`showView('${v}')`);
+  });
+}
+
+// ── THEME TOGGLE ──────────────────────────────────────────────────
+(function(){
+  const t=document.querySelector("[data-theme-toggle]");
+  const r=document.documentElement;
+  let d=matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light";
+  r.setAttribute("data-theme",d);
+  t&&t.addEventListener("click",()=>{
+    d=d==="dark"?"light":"dark";
+    r.setAttribute("data-theme",d);
+    t.innerHTML=d==="dark"
+      ?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>'
+      :'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>';
+  });
+})();
+
+// ── ICONS ─────────────────────────────────────────────────────────
+lucide.createIcons();
+</script>
+</body>
+</html>
